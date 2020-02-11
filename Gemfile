@@ -14,7 +14,7 @@ gem "prometheus_exporter", "~> 0.4.5"
 gem "rake"
 gem "rest-client", "~>2.0"
 gem "sources-api-client", "~> 1.0"
-gem "topological_inventory-ingress_api-client", :git => "https://github.com/ManageIQ/topological_inventory-ingress_api-client-ruby", :branch => "master"
+gem "topological_inventory-ingress_api-client", "~> 1.0"
 gem "topological_inventory-providers-common",   :git => "https://github.com/ManageIQ/topological_inventory-providers-common", :branch => "master"
 group :test, :development do
   gem "rspec"
