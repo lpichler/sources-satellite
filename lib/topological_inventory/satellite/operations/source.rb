@@ -38,19 +38,11 @@ module TopologicalInventory
         private
 
         def connection_check(source_id)
-          endpoints = api_client.list_source_endpoints(source_id)&.data || []
-          endpoint = endpoints.find(&:default)
+          endpoint = api_client.list_source_endpoints(source_id)&.data&.detect(&:default)
           return STATUS_UNAVAILABLE unless endpoint
 
-          endpoint_authentications = api_client.list_endpoint_authentications(endpoint.id.to_s).data || []
-          return STATUS_UNAVAILABLE if endpoint_authentications.empty?
-
-          auth_id = endpoint_authentications.first.id
-          auth = Core::AuthenticationRetriever.new(auth_id, identity).process
-          return STATUS_UNAVAILABLE unless auth
-
-          _connection = TopologicalInventory::Satellite::Connection.connection()
-          STATUS_AVAILABLE
+          connection = TopologicalInventory::Satellite::Connection.connection(params["external_tenant"], endpoint.receptor_node)
+          connection.status == "connected" ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
         rescue => e
           logger.error("Failed to connect to Source id:#{source_id} - #{e.message}")
           STATUS_UNAVAILABLE
