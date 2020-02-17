@@ -18,8 +18,23 @@ module TopologicalInventory
         url = receptor_controller_url("/connection/status")
         body = {"account" => account_number, "node_id" => node_id}.to_json
         response = Faraday.post(url, body, identity_header(account_number))
-        JSON.parse(resp.body)["status"]
+        JSON.parse(response.body)["status"]
       end
+
+        def send_availability_check(caller, receptor_node_id, response_worker)
+          url = receptor_controller_url("/job")
+          body = {
+            :account   => default_user_account,
+            :recipient => receptor_node_id,
+            :payload   => Time.zone.now.to_s,
+            :directive => RECEPTOR_DIRECTIVE
+          }
+          response = Faraday.post(url, body, identity_header(account_number))
+          msg_id = JSON.parse(response.body)['id']
+
+          # response in Source.availability_check_response
+          response_worker.register_msg_id(msg_id, caller, :availability_check_response)
+        end
 
       private
 
@@ -46,6 +61,11 @@ module TopologicalInventory
             {"identity" => {"account_number" => account_number}}.to_json
           )
         }
+      end
+
+      # TODO: tmp required account in receptor controller
+      def default_user_account
+        '0000001'
       end
     end
   end

@@ -9,40 +9,58 @@ module TopologicalInventory
       class Source
         include Logging
         STATUS_AVAILABLE, STATUS_UNAVAILABLE = %w[available unavailable].freeze
+        RECEPTOR_DIRECTIVE = "receptor:ping".freeze # TODO: this is a test!
 
-        attr_accessor :params, :context, :source_id
+        attr_accessor :params, :context, :receptor_worker, :source_id
 
-        def initialize(params = {}, request_context = nil)
-          @params  = params
-          @context = request_context
-          @source_id = nil
+        def initialize(params = {}, request_context = nil, receptor_worker = nil)
+          self.params  = params
+          self.context = request_context
+          self.receptor_worker = receptor_worker
+          self.source_id = nil
         end
 
         def availability_check
-          source_id = params["source_id"]
+          self.source_id = params["source_id"]
           unless source_id
             logger.error("Missing source_id for the availability_check request")
             return
           end
 
-          source = SourcesApiClient::Source.new
-          source.availability_status = connection_check(source_id)
-
-          begin
-            api_client.update_source(source_id, source)
-          rescue SourcesApiClient::ApiError => e
-            logger.error("Failed to update Source id:#{source_id} - #{e.message}")
+          if connection_check(source_id) == STATUS_UNAVAILABLE
+            update_source(source_id, source)
           end
         end
 
+        # TODO: update after "satellite:ping" directive available
+        def availability_check_response(_msg_id)
+          # woohoo, always successful
+          update_source(source_id, STATUS_AVAILABLE)
+        end
+
         private
+
+        def update_source(source_id, status)
+          source = SourcesApiClient::Source.new
+          source.availability_status = status
+
+          api_client.update_source(source_id, source)
+        rescue SourcesApiClient::ApiError => e
+          logger.error("Failed to update Source id:#{source_id} - #{e.message}")
+        end
 
         def connection_check(source_id)
           endpoint = api_client.list_source_endpoints(source_id)&.data&.detect(&:default)
           return STATUS_UNAVAILABLE unless endpoint
 
           connection = TopologicalInventory::Satellite::Connection.connection(params["external_tenant"], endpoint.receptor_node)
-          connection.status == "connected" ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
+
+          if receptor_network_status(connection) == STATUS_AVAILABLE
+            endpoint_check(connection, endpoint.receptor_node)
+            STATUS_AVAILABLE
+          else
+            STATUS_UNAVAILABLE
+          end
         rescue => e
           logger.error("Failed to connect to Source id:#{source_id} - #{e.message}")
           STATUS_UNAVAILABLE
@@ -58,6 +76,15 @@ module TopologicalInventory
             api_client.default_headers.merge!(identity)
             SourcesApiClient::DefaultApi.new(api_client)
           end
+        end
+
+        def receptor_network_status(connection)
+          connection.status == "connected" ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
+        end
+
+        # Async, it doesn't return value
+        def endpoint_check(connection, receptor_node_id)
+          connection.send_availability_check(self, receptor_node_id, receptor_worker)
         end
       end
     end
