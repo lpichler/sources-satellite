@@ -1,45 +1,51 @@
+require "faraday"
+
 module TopologicalInventory
   module Satellite
-    module Connection
+    class Connection
       class << self
         def connection(account_number, receptor_node_id)
-          self.account_number = account_number
-          self.node_id        = receptor_node_id
+          new(account_number, receptor_node_id)
         end
+      end
 
-        def status
-          url = receptor_controller_url("/connection/status")
-          body = {"account" => account_number, "node_id" => node_id}.to_json
-          response = Faraday.post(url, body, identity_header(account_number))
-          JSON.parse(resp.body)["status"]
-        end
+      def initialize(account_number, node_id)
+        self.account_number = account_number
+        self.node_id        = node_id
+      end
 
-        private
+      def status
+        url = receptor_controller_url("/connection/status")
+        body = {"account" => account_number, "node_id" => node_id}.to_json
+        response = Faraday.post(url, body, identity_header(account_number))
+        JSON.parse(resp.body)["status"]
+      end
 
-        attr_accessor :account_number, :node_id
-        attr_reader   :connection
+      private
 
-        def receptor_controller_url(endpoint)
-          endpoint = "/#{endpoint}" unless endpoint[0] == "/"
+      attr_accessor :account_number, :node_id
+      attr_reader   :connection
 
-          "#{receptor_controller_base_url}#{endpoint}"
-        end
+      def receptor_controller_url(endpoint)
+        endpoint = "/#{endpoint}" unless endpoint[0] == "/"
 
-        def receptor_controller_base_url
-          scheme = ENV["RECEPTOR_CONTROLLER_SCHEME"] || "http"
-          host   = ENV["RECEPTOR_CONTROLLER_HOST"] || "localhost"
-          port   = ENV["RECEPTOR_CONTROLLER_PORT"] || "9090"
+        "#{receptor_controller_base_url}#{endpoint}"
+      end
 
-          "#{scheme}://#{host}:#{port}"
-        end
+      def receptor_controller_base_url
+        scheme = ENV["RECEPTOR_CONTROLLER_SCHEME"] || "http"
+        host   = ENV["RECEPTOR_CONTROLLER_HOST"] || "localhost"
+        port   = ENV["RECEPTOR_CONTROLLER_PORT"] || "9090"
 
-        def identity_header(account_number)
-          {
-            "x-rh-identity" => Base64.strict_encode64(
-              {"identity" => {"account_number" => account_number}}.to_json
-            )
-          }
-        end
+        "#{scheme}://#{host}:#{port}"
+      end
+
+      def identity_header(account_number)
+        {
+          "x-rh-identity" => Base64.strict_encode64(
+            {"identity" => {"account_number" => account_number}}.to_json
+          )
+        }
       end
     end
   end
