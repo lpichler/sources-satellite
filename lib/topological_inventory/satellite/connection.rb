@@ -5,13 +5,12 @@ module TopologicalInventory
         def connection(account_number, receptor_node_id)
           self.account_number = account_number
           self.node_id        = receptor_node_id
-          @connection         = Faraday.new(receptor_controller_url, headers: identity_header)
         end
 
         def status
           url = receptor_controller_url("/connection/status")
           body = {"account" => account_number, "node_id" => node_id}.to_json
-          response = Faraday.post(url, body, identity_header)
+          response = Faraday.post(url, body, identity_header(account_number))
           JSON.parse(resp.body)["status"]
         end
 
