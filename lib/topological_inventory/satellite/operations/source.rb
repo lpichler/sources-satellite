@@ -9,7 +9,8 @@ module TopologicalInventory
       class Source
         include Logging
         STATUS_AVAILABLE, STATUS_UNAVAILABLE = %w[available unavailable].freeze
-        RECEPTOR_DIRECTIVE = "receptor:ping".freeze # TODO: this is a test!
+        RECEPTOR_DIRECTIVE = "receptor:ping".freeze
+#        RECEPTOR_DIRECTIVE = "satellite:health_check".freeze
 
         attr_accessor :params, :context, :receptor_worker, :source_id
 
@@ -28,11 +29,11 @@ module TopologicalInventory
           end
 
           if connection_check(source_id) == STATUS_UNAVAILABLE
-            update_source(source_id, source)
+            update_source(source_id, STATUS_UNAVAILABLE)
           end
         end
 
-        # TODO: update after "satellite:ping" directive available
+        # TODO: update after "satellite:health_check" directive available
         def availability_check_response(_msg_id)
           # woohoo, always successful
           update_source(source_id, STATUS_AVAILABLE)
