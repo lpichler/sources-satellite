@@ -21,14 +21,20 @@ module TopologicalInventory
         JSON.parse(response.body)["status"]
       end
 
-      def send_availability_check(caller, receptor_node_id, response_worker)
+      def send_availability_check(caller, source_uid, receptor_node_id, response_worker)
         url = receptor_controller_url("/job")
         body = {
           :account   => account_number,
           :recipient => receptor_node_id,
           :payload   => Time.zone.now.to_s,
-          :directive => RECEPTOR_DIRECTIVE
+          :directive => "receptor:ping"
         }
+        # body = {
+        #   :account   => account_number,
+        #   :recipient => receptor_node_id,
+        #   :payload   => {'foreman_uuid' => source_uid.to_s}.to_json,
+        #   :directive => "satellite:health_check"
+        # }
         response = Faraday.post(url, body, identity_header(account_number))
         msg_id = JSON.parse(response.body)['id']
 
