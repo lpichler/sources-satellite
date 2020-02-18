@@ -6,22 +6,23 @@ module TopologicalInventory
       class Processor
         include Logging
 
-        def self.process!(message)
-          new(message).process
+        def self.process!(message, receptor_worker)
+          new(message, receptor_worker).process
         end
 
-        def initialize(message)
+        def initialize(message, receptor_worker)
           self.message = message
           self.model, self.method = message.message.split(".")
 
           self.params   = message.payload["params"]
           self.identity = message.payload["request_context"]
+          self.receptor_worker = receptor_worker
         end
 
         def process
           logger.info(status_log_msg)
 
-          impl = Operations.const_get(model).new(params, identity) if Operations.const_defined?(model)
+          impl = Operations.const_get(model).new(params, identity, receptor_worker) if Operations.const_defined?(model)
           if impl&.respond_to?(method)
             result = impl.send(method)
 
@@ -34,7 +35,7 @@ module TopologicalInventory
 
         private
 
-        attr_accessor :message, :identity, :model, :method, :params
+        attr_accessor :message, :identity, :model, :method, :params, :receptor_worker
 
         def status_log_msg(status = nil)
           "Processing #{model}##{method} [#{params}]...#{status}"

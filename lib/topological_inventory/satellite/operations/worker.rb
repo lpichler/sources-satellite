@@ -1,5 +1,6 @@
 require "topological_inventory/satellite/logging"
 require "topological_inventory/satellite/operations/processor"
+require "topological_inventory/satellite/receptor/response_worker"
 require "topological_inventory/satellite/operations/source"
 
 module TopologicalInventory
@@ -13,24 +14,30 @@ module TopologicalInventory
         end
 
         def run
+          # Run receptor response listener
+          receptor_worker = Receptor::ResponseWorker.new(messaging_client_opts[:host], messaging_client_opts[:port])
+          receptor_listener = receptor_worker.start
+
           # Open a connection to the messaging service
           require "manageiq-messaging"
           client = ManageIQ::Messaging::Client.open(messaging_client_opts)
 
           logger.info("Topological Inventory Satellite Operations worker started...")
           client.subscribe_topic(queue_opts) do |message|
-            process_message(message)
+            process_message(message, receptor_worker)
           end
+
         ensure
           client&.close
+          receptor_listener&.kill
         end
 
         private
 
         attr_accessor :messaging_client_opts
 
-        def process_message(message)
-          Processor.process!(message)
+        def process_message(message, receptor_worker)
+          Processor.process!(message, receptor_worker)
         rescue => e
           logger.error("#{e}\n#{e.backtrace.join("\n")}")
           raise

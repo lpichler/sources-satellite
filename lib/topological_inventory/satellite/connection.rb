@@ -18,7 +18,28 @@ module TopologicalInventory
         url = receptor_controller_url("/connection/status")
         body = {"account" => account_number, "node_id" => node_id}.to_json
         response = Faraday.post(url, body, identity_header(account_number))
-        JSON.parse(resp.body)["status"]
+        JSON.parse(response.body)["status"]
+      end
+
+      def send_availability_check(caller, source_uid, receptor_node_id, response_worker)
+        url = receptor_controller_url("/job")
+        body = {
+          :account   => account_number,
+          :recipient => receptor_node_id,
+          :payload   => Time.zone.now.to_s,
+          :directive => "receptor:ping"
+        }
+        # body = {
+        #   :account   => account_number,
+        #   :recipient => receptor_node_id,
+        #   :payload   => {'foreman_uuid' => source_uid.to_s}.to_json,
+        #   :directive => "satellite:health_check"
+        # }
+        response = Faraday.post(url, body, identity_header(account_number))
+        msg_id = JSON.parse(response.body)['id']
+
+        # response in Source.availability_check_response
+        response_worker.register_msg_id(msg_id, caller, :availability_check_response)
       end
 
       private
@@ -40,10 +61,11 @@ module TopologicalInventory
         "#{scheme}://#{host}:#{port}"
       end
 
+      # org_id with any number is required by receptor controller
       def identity_header(account_number)
         {
           "x-rh-identity" => Base64.strict_encode64(
-            {"identity" => {"account_number" => account_number}}.to_json
+            {"identity" => {"account_number" => account_number, "internal" => {"org_id" => '000002'}}}.to_json
           )
         }
       end
