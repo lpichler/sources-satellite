@@ -34,22 +34,17 @@ module TopologicalInventory
           end
         end
 
-        # TODO: update after "satellite:health_check" directive available
-        def availability_check_response(_msg_id, data)
-          if false
-            response = JSON.parse(data)
-            # TODO: format of fifi_ready value is not defined yet
-            status = response['result'] == 'ok' && response['fifi_ready'].to_i == 1 ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
+        # Health check returns maximally one message of type "response"
+        def availability_check_response(_msg_id, message_type, response)
+          return if message_type == 'eof' # noop
 
-            if status == STATUS_UNAVAILABLE
-             logger.warn("Source #{source_id} is unavailable. Reason: #{response['message']}")
-            end
+          status = response['result'] == 'ok' && response['fifi_status'] ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
 
-            update_source(source_id, status)
-          else
-            # woohoo, always successful
-            update_source(source_id, STATUS_AVAILABLE)
+          if status == STATUS_UNAVAILABLE
+           logger.warn("Source #{source_id} is unavailable. Result: #{response['result']}, FIFI status: #{response['fifi_Status'] ? 'T' : 'F'}, Reason: #{response['message']}")
           end
+
+          update_source(source_id, status)
         end
 
         private
@@ -71,8 +66,10 @@ module TopologicalInventory
 
           if receptor_network_status(connection) == STATUS_AVAILABLE
             endpoint_check(connection, source_uid, endpoint.receptor_node)
+            logger.info("Available")
             STATUS_AVAILABLE
           else
+            logger.info("Unavailable")
             STATUS_UNAVAILABLE
           end
         rescue => e

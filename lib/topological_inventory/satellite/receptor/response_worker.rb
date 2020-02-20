@@ -45,12 +45,25 @@ module TopologicalInventory::Satellite
 
       def process_message(message)
         response = JSON.parse(message.payload)
-        message_id = response['message_id']
+        if response['code'] == 0
+          message_id = response['in_response_to']
+          # message_type: "response" (with data) or
+          #               "eof"(without data)
+          message_type = response['message_type']
 
-        if (callback = registered_messages.delete(message_id)).present?
-          callback[:api_object].send(callback[:method], message_id, response['payload'])
+          if message_id
+            if (callback = registered_messages[message_id]).present?
+              registered_messages.delete(message_id) if message_type == 'eof'
+              # Callback to sender
+              callback[:api_object].send(callback[:method], message_id, message_type, response['payload'])
+            else
+              logger.warn("Received Unknown Receptor Message ID (#{message_id}): #{response.inspect}")
+            end
+          else
+            raise "Message id (in_response_to) not received! #{response}"
+          end
         else
-          logger.warn("Received Unknown Receptor Message ID (#{message_id}): #{response.inspect}")
+          logger.error("Receptor_satellite:health_check directive failed in receptor node #{response['sender']}")
         end
       rescue JSON::ParserError => e
         logger.error("Failed to parse Kafka response (#{e.message})\n#{message.payload}")

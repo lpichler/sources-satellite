@@ -10,7 +10,7 @@ module TopologicalInventory
       end
 
       def initialize(account_number, node_id)
-        self.account_number = account_number
+        self.account_number = "0000001" #account_number
         self.node_id        = node_id
       end
 
@@ -18,24 +18,21 @@ module TopologicalInventory
         url = receptor_controller_url("/connection/status")
         body = {"account" => account_number, "node_id" => node_id}.to_json
         response = Faraday.post(url, body, identity_header(account_number))
+        # puts "BODY: #{body}, RESPONSE: #{response.body}"
         JSON.parse(response.body)["status"]
       end
 
       def send_availability_check(caller, source_uid, receptor_node_id, response_worker)
         url = receptor_controller_url("/job")
+
         body = {
           :account   => account_number,
           :recipient => receptor_node_id,
-          :payload   => Time.zone.now.to_s,
-          :directive => "receptor:ping"
+          :payload   => {'satellite_instance_id' => source_uid.to_s}.to_json,
+          :directive => "receptor_satellite:health_check"
         }
-        # body = {
-        #   :account   => account_number,
-        #   :recipient => receptor_node_id,
-        #   :payload   => {'foreman_uuid' => source_uid.to_s}.to_json,
-        #   :directive => "satellite:health_check"
-        # }
-        response = Faraday.post(url, body, identity_header(account_number))
+        # puts body
+        response = Faraday.post(url, body.to_json, identity_header(account_number))
         msg_id = JSON.parse(response.body)['id']
 
         # response in Source.availability_check_response
@@ -65,7 +62,7 @@ module TopologicalInventory
       def identity_header(account_number)
         {
           "x-rh-identity" => Base64.strict_encode64(
-            {"identity" => {"account_number" => account_number, "internal" => {"org_id" => '000002'}}}.to_json
+            {"identity" => {"account_number" => account_number, "internal" => {"org_id" => '000001'}}}.to_json
           )
         }
       end
