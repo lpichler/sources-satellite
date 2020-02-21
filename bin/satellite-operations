@@ -2,15 +2,34 @@
 
 $LOAD_PATH << File.expand_path("../lib", __dir__)
 require "bundler/setup"
+require "active_support/core_ext/object/blank"
+require "optimist"
 require "topological_inventory/satellite/operations/worker"
 
-queue_host = ENV["QUEUE_HOST"] || "localhost"
-queue_port = ENV["QUEUE_PORT"] || 9092
-
-SourcesApiClient.configure do |config|
-  config.scheme = ENV["SOURCES_SCHEME"]
-  config.host   = "#{ENV["SOURCES_HOST"]}:#{ENV["SOURCES_PORT"]}"
+def parse_args
+  Optimist.options do
+    opt :queue_host, "Kafka messaging: hostname or IP", :type => :string, :default => ENV["QUEUE_HOST"] || "localhost"
+    opt :queue_port, "Kafka messaging: port", :type => :integer, :default => (ENV["QUEUE_PORT"] || 9092).to_i
+    opt :sources_scheme, "Sources API scheme", :type => :string, :default => ENV["SOURCES_SCHEME"]
+    opt :sources_host, "Sources API host name", :type => :string, :default => ENV["SOURCES_HOST"]
+    opt :sources_port, "Sources API port", :type => :integer, :default => ENV["SOURCES_PORT"].to_i
+  end
 end
 
-operations_worker = TopologicalInventory::Satellite::Operations::Worker.new(:host => queue_host, :port => queue_port)
+def check_args(args)
+  (args.keys - %i[help]).each do |arg|
+    Optimist.die arg, "can't be blank" if args[arg].blank?
+    Optimist.die arg, "can't be zero" if arg.to_s.index('port').present? && args[arg].zero?
+  end
+end
+
+args = parse_args
+check_args(args)
+
+SourcesApiClient.configure do |config|
+  config.scheme = args[:sources_scheme]
+  config.host   = "#{args[:sources_host]}:#{args[:sources_port]}"
+end
+
+operations_worker = TopologicalInventory::Satellite::Operations::Worker.new(:host => args[:queue_host], :port => args[:queue_port])
 operations_worker.run
