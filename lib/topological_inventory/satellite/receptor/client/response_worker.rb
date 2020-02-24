@@ -1,3 +1,5 @@
+require "concurrent"
+
 module TopologicalInventory::Satellite
   module Receptor
     class Client::ResponseWorker
@@ -85,12 +87,12 @@ module TopologicalInventory::Satellite
         end
       rescue JSON::ParserError => e
         logger.error("Failed to parse Kafka response (#{e.message})\n#{message.payload}")
-      rescue StandardError => e
+      rescue => e
         logger.error("#{e}\n#{e.backtrace.join("\n")}")
       end
 
-      def check_timeouts(threshold = 5.minutes)
-        while started.value do
+      def check_timeouts(threshold = 2.minutes)
+        while started.value
           expired = []
           #
           # STEP 1 Collect expired messages
@@ -115,11 +117,11 @@ module TopologicalInventory::Satellite
         end
       end
 
+      # No persist_ref here, because all instances (pods) needs to receive kafka message
       def queue_opts
         {
-          # :max_bytes   => 50_000,
-          # :persist_ref => "topological-inventory-receptor-responses", # groups subscribers (message is consumed by only one of the subscribers)
-          :service => config.kafka_response_topic,
+          :max_bytes => 50_000,
+          :service   => config.kafka_response_topic,
         }
       end
 

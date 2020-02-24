@@ -2,6 +2,7 @@ require "sources-api-client"
 require "active_support/core_ext/numeric/time"
 require "topological_inventory/satellite/connection"
 require "topological_inventory/satellite/operations/core/authentication_retriever"
+require "topological_inventory/satellite/logging"
 
 module TopologicalInventory
   module Satellite
@@ -21,6 +22,9 @@ module TopologicalInventory
         end
 
         # Entrypoint for "Source:availability_check" operation
+        #
+        # It updates Source only when unavailable, otherwise it waits
+        # for asynchronous #availability_check_[response|timeout]
         def availability_check
           return if params_missing?
 
@@ -43,7 +47,7 @@ module TopologicalInventory
           status = connected ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
 
           unless available?(status)
-           logger.info("Source #{source_id} is unavailable. Result: #{response['result']}, FIFI status: #{response['fifi_status'] ? 'T' : 'F'}, Reason: #{response['message']}")
+            logger.info("Source #{source_id} is unavailable. Result: #{response['result']}, FIFI status: #{response['fifi_status'] ? 'T' : 'F'}, Reason: #{response['message']}")
           end
 
           update_source(status)
@@ -93,11 +97,12 @@ module TopologicalInventory
           return STATUS_UNAVAILABLE unless endpoint
 
           if available?(receptor_network_status(endpoint.receptor_node))
-            send_availability_check(endpoint.receptor_node)
-            STATUS_AVAILABLE
-          else
-            STATUS_UNAVAILABLE
+            if send_availability_check(endpoint.receptor_node)
+              return STATUS_AVAILABLE
+            end
           end
+
+          STATUS_UNAVAILABLE
         rescue => e
           logger.error("Failed to connect to Source id:#{source_id} - #{e.message}")
           STATUS_UNAVAILABLE
@@ -115,7 +120,7 @@ module TopologicalInventory
           connection.status(receptor_node_id) == "connected" ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
         end
 
-        # @return [String] UUID - message ID for callbacks
+        # @return [String|nil] UUID - message ID for callbacks
         def send_availability_check(receptor_node_id)
           connection.send_availability_check(source_uid, receptor_node_id, self)
         end

@@ -11,7 +11,7 @@ module TopologicalInventory
         self.account_number = account_number
         self.receptor_client = receptor_client
 
-        receptor_client.default_headers.merge!(identity_header)
+        receptor_client.identity_header = identity_header
       end
 
       # org_id with any number is required by receptor_client controller

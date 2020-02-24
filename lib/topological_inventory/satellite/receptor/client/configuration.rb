@@ -2,8 +2,8 @@ module TopologicalInventory
   module Satellite
     module Receptor
       class Client::Configuration
-        attr_accessor :controller_scheme
-        attr_accessor :controller_host
+        attr_reader :controller_scheme
+        attr_reader :controller_host
 
         attr_accessor :connection_status_path
         attr_accessor :job_path
@@ -35,14 +35,14 @@ module TopologicalInventory
           yield(self) if block_given?
         end
 
-        def scheme=(scheme)
+        def controller_scheme=(scheme)
           # remove :// from scheme
-          @scheme = scheme.sub(/:\/\//, '')
+          @controller_scheme = scheme.sub(/:\/\//, '')
         end
 
-        def host=(host)
+        def controller_host=(host)
           # remove http(s):// and anything after a slash
-          @host = host.sub(/https?:\/\//, '').split('/').first
+          @controller_host = host.sub(/https?:\/\//, '').split('/').first
         end
 
         def controller_url

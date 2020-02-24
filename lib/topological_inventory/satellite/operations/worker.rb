@@ -25,7 +25,6 @@ module TopologicalInventory
           client.subscribe_topic(queue_opts) do |message|
             process_message(message, receptor_client)
           end
-
         ensure
           client&.close
           receptor_client&.stop
@@ -35,8 +34,8 @@ module TopologicalInventory
 
         attr_accessor :messaging_client_opts
 
-        def process_message(message, receptor_worker)
-          Processor.process!(message, receptor_worker)
+        def process_message(message, receptor_client)
+          Processor.process!(message, receptor_client)
         rescue => e
           logger.error("#{e}\n#{e.backtrace.join("\n")}")
           raise
