@@ -2,6 +2,7 @@ require "sources-api-client"
 require "active_support/core_ext/numeric/time"
 require "topological_inventory/satellite/connection"
 require "topological_inventory/satellite/operations/core/authentication_retriever"
+require "topological_inventory/satellite/logging"
 
 module TopologicalInventory
   module Satellite
@@ -10,51 +11,79 @@ module TopologicalInventory
         include Logging
         STATUS_AVAILABLE, STATUS_UNAVAILABLE = %w[available unavailable].freeze
 
-        attr_accessor :params, :context, :receptor_worker, :source_id, :source_uid
+        attr_accessor :source_id, :source_uid
 
-        def initialize(params = {}, request_context = nil, receptor_worker = nil)
-          self.params  = params
-          self.context = request_context
-          self.receptor_worker = receptor_worker
-          self.source_id = nil
-          self.source_uid = nil
+        def initialize(params = {}, request_context = nil, receptor_client = nil)
+          self.params          = params
+          self.request_context = request_context
+          self.connection      = TopologicalInventory::Satellite::Connection.connection(params["external_tenant"], receptor_client)
+          self.source_id       = params['source_id']
+          self.source_uid      = params['source_uid']
         end
 
+        # Entrypoint for "Source:availability_check" operation
+        #
+        # It updates Source only when unavailable, otherwise it waits
+        # for asynchronous #availability_check_[response|timeout]
         def availability_check
-          %w[source_id source_uid].each do |attr|
-            unless params[attr]
-              logger.error("Missing #{attr} for the availability_check request")
-              return
-            end
-            self.send("#{attr}=", params[attr])
-          end
+          return if params_missing?
 
-          if connection_check(source_id, source_uid) == STATUS_UNAVAILABLE
-            update_source(source_id, STATUS_UNAVAILABLE)
+          unless available?(connection_status)
+            update_source(STATUS_UNAVAILABLE)
           end
         end
 
-        # TODO: update after "satellite:health_check" directive available
-        def availability_check_response(_msg_id, data)
-          if false
-            response = JSON.parse(data)
-            # TODO: format of fifi_ready value is not defined yet
-            status = response['result'] == 'ok' && response['fifi_ready'].to_i == 1 ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
+        # Response callback from receptor client
+        #
+        # Health check returns maximally one message of type "response"
+        #
+        # @param _msg_id [String] UUID of request's id
+        # @param message_type [String] "response" | "eof"
+        # @param response [Hash]
+        def availability_check_response(_msg_id, message_type, response)
+          return if message_type == 'eof' # noop
 
-            if status == STATUS_UNAVAILABLE
-             logger.warn("Source #{source_id} is unavailable. Reason: #{response['message']}")
-            end
+          connected = response['result'] == 'ok' && response['fifi_status']
+          status = connected ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
 
-            update_source(source_id, status)
-          else
-            # woohoo, always successful
-            update_source(source_id, STATUS_AVAILABLE)
+          unless available?(status)
+            logger.info("Source #{source_id} is unavailable. Result: #{response['result']}, FIFI status: #{response['fifi_status'] ? 'T' : 'F'}, Reason: #{response['message']}")
           end
+
+          update_source(status)
+        end
+
+        # Timeout callback from receptor client
+        #
+        # Kafka message wan't delivered for unknown reason
+        #
+        # @param msg_id [String] UUID of request's id
+        def availability_check_timeout(msg_id)
+          logger.error("Receptor doesn't respond for Source (ID #{source_id}) | (message id: #{msg_id})")
+          update_source(STATUS_UNAVAILABLE)
         end
 
         private
 
-        def update_source(source_id, status)
+        attr_accessor :connection, :params, :request_context
+
+        def available?(status)
+          status.to_s == STATUS_AVAILABLE
+        end
+
+        def params_missing?
+          is_missing = false
+          %w[source_id source_uid].each do |attr|
+            if (is_missing = params[attr].blank?)
+              logger.error("Missing #{attr} for the availability_check request")
+              break
+            end
+          end
+
+          is_missing
+        end
+
+        def update_source(status)
           source = SourcesApiClient::Source.new
           source.availability_status = status
 
@@ -63,42 +92,37 @@ module TopologicalInventory
           logger.error("Failed to update Source id:#{source_id} - #{e.message}")
         end
 
-        def connection_check(source_id, source_uid)
+        def connection_status
           endpoint = api_client.list_source_endpoints(source_id)&.data&.detect(&:default)
           return STATUS_UNAVAILABLE unless endpoint
 
-          connection = TopologicalInventory::Satellite::Connection.connection(params["external_tenant"], endpoint.receptor_node)
-
-          if receptor_network_status(connection) == STATUS_AVAILABLE
-            endpoint_check(connection, source_uid, endpoint.receptor_node)
-            STATUS_AVAILABLE
-          else
-            STATUS_UNAVAILABLE
+          if available?(receptor_network_status(endpoint.receptor_node))
+            if send_availability_check(endpoint.receptor_node)
+              return STATUS_AVAILABLE
+            end
           end
+
+          STATUS_UNAVAILABLE
         rescue => e
           logger.error("Failed to connect to Source id:#{source_id} - #{e.message}")
           STATUS_UNAVAILABLE
         end
 
-        def identity
-          @identity ||= { "x-rh-identity" => Base64.strict_encode64({ "identity" => { "account_number" => params["external_tenant"], "user" => { "is_org_admin" => true }}}.to_json) }
-        end
-
         def api_client
           @api_client ||= begin
             api_client = SourcesApiClient::ApiClient.new
-            api_client.default_headers.merge!(identity)
+            api_client.default_headers.merge!(connection.identity_header)
             SourcesApiClient::DefaultApi.new(api_client)
           end
         end
 
-        def receptor_network_status(connection)
-          connection.status == "connected" ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
+        def receptor_network_status(receptor_node_id)
+          connection.status(receptor_node_id) == "connected" ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
         end
 
-        # Async, it doesn't return value
-        def endpoint_check(connection, source_uid, receptor_node_id)
-          connection.send_availability_check(self, source_uid, receptor_node_id, receptor_worker)
+        # @return [String|nil] UUID - message ID for callbacks
+        def send_availability_check(receptor_node_id)
+          connection.send_availability_check(source_uid, receptor_node_id, self)
         end
       end
     end
