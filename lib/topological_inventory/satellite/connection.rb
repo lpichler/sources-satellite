@@ -29,11 +29,11 @@ module TopologicalInventory
       end
 
       # @return [String] UUID - message ID for callbacks
-      def send_availability_check(source_uid, receptor_node_id, receiver)
+      def send_availability_check(source_ref, receptor_node_id, receiver)
         receptor_client.send_directive(account_number,
                                        receptor_node_id,
                                        :directive         => "receptor_satellite:health_check",
-                                       :payload           => {'satellite_instance_id' => source_uid.to_s}.to_json,
+                                       :payload           => {'satellite_instance_id' => source_ref.to_s}.to_json,
                                        :response_object   => receiver,
                                        :response_callback => :availability_check_response,
                                        :timeout_callback  => :availability_check_timeout)

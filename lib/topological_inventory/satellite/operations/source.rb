@@ -19,7 +19,7 @@ module TopologicalInventory
           :receptor_not_responding      => "Receptor is not responding",
         }.freeze
 
-        attr_accessor :source_id, :source_uid
+        attr_accessor :source_id, :source_uid, :source_ref
 
         def initialize(params = {}, request_context = nil, receptor_client = nil)
           self.params          = params
@@ -27,6 +27,7 @@ module TopologicalInventory
           self.connection      = TopologicalInventory::Satellite::Connection.connection(params["external_tenant"], receptor_client)
           self.source_id       = params['source_id']
           self.source_uid      = params['source_uid']
+          self.source_ref      = params['source_ref']
         end
 
         # Entrypoint for "Source:availability_check" operation
@@ -82,7 +83,7 @@ module TopologicalInventory
 
         def params_missing?
           is_missing = false
-          %w[source_id source_uid].each do |attr|
+          %w[source_id source_ref].each do |attr|
             if (is_missing = params[attr].blank?)
               logger.error("Missing #{attr} for the availability_check request")
               break
@@ -132,7 +133,7 @@ module TopologicalInventory
 
         # @return [String|nil] UUID - message ID for callbacks
         def send_availability_check(receptor_node_id)
-          connection.send_availability_check(source_uid, receptor_node_id, self)
+          connection.send_availability_check(source_ref, receptor_node_id, self)
         end
 
         def update_source_and_endpoint(status, error_message = nil)
