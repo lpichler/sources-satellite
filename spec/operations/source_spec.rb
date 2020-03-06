@@ -40,7 +40,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
   end
 
   describe "#availability_check" do
-    let(:params) { {'source_id' => '1', 'source_uid' => '1234-5678'} }
+    let(:params) { {'source_id' => '1', 'source_uid' => '1234-5678', 'source_ref' => '9101112-13141516'} }
 
     subject { described_class.new(params) }
 
