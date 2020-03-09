@@ -21,8 +21,8 @@ module TopologicalInventory::Satellite
           return if started.value
 
           started.value         = true
-          workers[:maintenance] = Thread.new { check_timeouts }
-          workers[:listener]    = Thread.new { listen }
+          workers[:maintenance] = Thread.new { loop { check_timeouts } }
+          workers[:listener]    = Thread.new { loop { listen } }
         end
       end
 
@@ -61,6 +61,8 @@ module TopologicalInventory::Satellite
         client.subscribe_topic(queue_opts) do |message|
           process_message(message)
         end
+      rescue => err
+        logger.error("Exception in kafka listener: #{err}\n#{err.backtrace.join("\n")}")
       ensure
         client&.close
       end
@@ -115,6 +117,8 @@ module TopologicalInventory::Satellite
 
           sleep(10)
         end
+      rescue => err
+        logger.error("Exception in maintenance worker: #{err}\n#{err.backtrace.join("\n")}")
       end
 
       # No persist_ref here, because all instances (pods) needs to receive kafka message
