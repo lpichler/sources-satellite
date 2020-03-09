@@ -137,6 +137,8 @@ module TopologicalInventory
         end
 
         def update_source_and_endpoint(status, error_message = nil)
+          logger.info("updating source [#{source_id}] status [#{status}] message [#{error_message}]")
+
           update_source(status)
           update_endpoint(status, error_message)
         end
