@@ -56,10 +56,7 @@ module TopologicalInventory
           connected = response['result'] == 'ok' && response['fifi_status']
           status = connected ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
 
-          unless available?(status)
-            logger.info("Source #{source_id} is unavailable. Result: #{response['result']}, FIFI status: #{response['fifi_status'] ? 'T' : 'F'}, Reason: #{response['message']}")
-          end
-
+          logger.info("Source#availability_check for source #{source_id} completed. Status: #{status}, Result: #{response['result']}, FIFI status: #{response['fifi_status'] ? 'T' : 'F'}, Reason: #{response['message']}")
           update_source_and_endpoint(status, response['message'])
         end
 
