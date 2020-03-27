@@ -3,6 +3,7 @@
 
 *.gem
 *.rbc
+*.swp
 /.config
 /.idea/
 /.creds
