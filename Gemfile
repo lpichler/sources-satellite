@@ -12,7 +12,7 @@ gem 'manageiq-messaging'
 gem "more_core_extensions"
 gem "optimist"
 gem "prometheus_exporter", "~> 0.4.5"
-gem "rake"
+gem "rake", ">= 12.3.3"
 gem "rest-client", "~>2.0"
 gem "sources-api-client", "~> 1.0"
 gem "topological_inventory-ingress_api-client", "~> 1.0"
