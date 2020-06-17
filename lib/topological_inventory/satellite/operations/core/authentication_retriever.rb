@@ -35,7 +35,10 @@ module TopologicalInventory
               :headers => headers
             }
             response = RestClient::Request.new(request_options).execute
-            SourcesApiClient::Authentication.new(JSON.parse(response.body))
+            params = JSON.parse(response.body)
+            # public API doesn't return tenant but internal API does
+            params.delete('tenant')
+            SourcesApiClient::Authentication.new(params)
           end
         end
       end
