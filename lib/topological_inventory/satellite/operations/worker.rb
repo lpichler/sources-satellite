@@ -3,6 +3,7 @@ require "topological_inventory/satellite/logging"
 require "topological_inventory/satellite/receptor/client"
 require "topological_inventory/satellite/operations/processor"
 require "topological_inventory/satellite/operations/source"
+require "topological_inventory/providers/common/operations/health_check"
 
 module TopologicalInventory
   module Satellite
@@ -41,6 +42,7 @@ module TopologicalInventory
           raise
         ensure
           message.ack
+          TopologicalInventory::Providers::Common::Operations::HealthCheck.touch_file
         end
 
         def queue_name
