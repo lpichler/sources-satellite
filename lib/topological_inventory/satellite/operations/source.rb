@@ -1,16 +1,12 @@
-require "sources-api-client"
-require "active_support/core_ext/numeric/time"
 require "topological_inventory/satellite/connection"
-require "topological_inventory/satellite/operations/core/authentication_retriever"
 require "topological_inventory/satellite/logging"
+require "topological_inventory/providers/common/operations/source"
 
 module TopologicalInventory
   module Satellite
     module Operations
-      class Source
+      class Source < TopologicalInventory::Providers::Common::Operations::Source
         include Logging
-        STATUS_AVAILABLE, STATUS_UNAVAILABLE = %w[available unavailable].freeze
-        LAST_CHECKED_AT_THRESHOLD = 5.minutes.freeze
 
         ERROR_MESSAGES = {
           :endpoint_not_found           => "Endpoint not found in Sources API",
@@ -23,27 +19,10 @@ module TopologicalInventory
         attr_accessor :source_id, :source_uid, :source_ref
 
         def initialize(params = {}, request_context = nil, receptor_client = nil)
-          self.params          = params
-          self.request_context = request_context
+          super(params, request_context)
           self.connection      = TopologicalInventory::Satellite::Connection.connection(params["external_tenant"], receptor_client)
-          self.source_id       = params['source_id']
           self.source_uid      = params['source_uid']
           self.source_ref      = params['source_ref']
-        end
-
-        # Entrypoint for "Source:availability_check" operation
-        #
-        # It updates Source only when unavailable, otherwise it waits
-        # for asynchronous #availability_check_[response|timeout]
-        def availability_check
-          return if params_missing?
-
-          return if checked_recently?
-
-          status, error_message = connection_status
-          unless available?(status)
-            update_source_and_endpoint(STATUS_UNAVAILABLE, error_message)
-          end
         end
 
         # Response callback from receptor client
@@ -60,7 +39,7 @@ module TopologicalInventory
           status = connected ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
 
           logger.info("Source#availability_check for source #{source_id} completed. Status: #{status}, Result: #{response['result']}, FIFI status: #{response['fifi_status'] ? 'T' : 'F'}, Reason: #{response['message']}")
-          update_source_and_endpoint(status, response['message'])
+          update_source_and_subresources(status, response['message'])
         end
 
         # Timeout callback from receptor client
@@ -70,7 +49,7 @@ module TopologicalInventory
         # @param msg_id [String] UUID of request's id
         def availability_check_timeout(msg_id)
           logger.error("Source#availability_check - Receptor doesn't respond for Source (ID #{source_id}) | (message id: #{msg_id})")
-          update_source_and_endpoint(STATUS_UNAVAILABLE, ERROR_MESSAGES[:receptor_not_responding])
+          update_source_and_subresources(STATUS_UNAVAILABLE, ERROR_MESSAGES[:receptor_not_responding])
         end
 
         private
@@ -79,35 +58,6 @@ module TopologicalInventory
 
         def available?(status)
           status.to_s == STATUS_AVAILABLE
-        end
-
-        def params_missing?
-          is_missing = false
-          %w[source_id source_ref].each do |attr|
-            if (is_missing = params[attr].blank?)
-              logger.error("Source#availability_check - Missing #{attr} for the availability_check request [Source ID: #{source_id}]")
-              break
-            end
-          end
-
-          is_missing
-        end
-
-        def checked_recently?
-          return false if endpoint.nil?
-
-          checked_recently = endpoint.last_checked_at.present? && endpoint.last_checked_at >= LAST_CHECKED_AT_THRESHOLD.ago
-          logger.info("Source#availability_check - Skipping, last check at #{endpoint.last_checked_at} [Source ID: #{source_id}] ") if checked_recently
-
-          checked_recently
-        end
-
-        def connection_status
-          return [STATUS_UNAVAILABLE, ERROR_MESSAGES[:endpoint_not_found]] unless endpoint
-          return [STATUS_UNAVAILABLE, ERROR_MESSAGES[:receptor_node_not_defined]] if endpoint.receptor_node.blank?
-
-          check_time
-          connection_check
         end
 
         def connection_check
@@ -129,18 +79,6 @@ module TopologicalInventory
           [STATUS_UNAVAILABLE, e.message]
         end
 
-        def api_client
-          @api_client ||= begin
-            api_client = SourcesApiClient::ApiClient.new
-            api_client.default_headers.merge!(connection.identity_header)
-            SourcesApiClient::DefaultApi.new(api_client)
-          end
-        end
-
-        def endpoint
-          @endpoint ||= api_client.list_source_endpoints(source_id)&.data&.detect(&:default)
-        end
-
         def receptor_network_status(receptor_node_id)
           connection.status(receptor_node_id) == "connected" ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
         end
@@ -148,46 +86,6 @@ module TopologicalInventory
         # @return [String|nil] UUID - message ID for callbacks
         def send_availability_check(receptor_node_id)
           connection.send_availability_check(source_ref, receptor_node_id, self)
-        end
-
-        def update_source_and_endpoint(status, error_message = nil)
-          logger.info("Source#availability_check - updating source [#{source_id}] status [#{status}] message [#{error_message}]")
-
-          update_source(status)
-          update_endpoint(status, error_message)
-        end
-
-        def update_source(status)
-          source = SourcesApiClient::Source.new
-          source.availability_status = status
-          source.last_checked_at     = check_time
-          source.last_available_at   = check_time if status == STATUS_AVAILABLE
-
-          api_client.update_source(source_id, source)
-        rescue SourcesApiClient::ApiError => e
-          logger.error("Source#availability_check - Failed to update Source id:#{source_id} - #{e.message}")
-        end
-
-        def update_endpoint(status, error_message)
-          if endpoint.nil?
-            logger.error("Source#availability_check - Failed to update Endpoint for Source id:#{source_id}. Endpoint not found")
-            return
-          end
-
-          endpoint_update = SourcesApiClient::Endpoint.new
-
-          endpoint_update.availability_status       = status
-          endpoint_update.availability_status_error = error_message.to_s
-          endpoint_update.last_checked_at           = check_time
-          endpoint_update.last_available_at         = check_time if status == STATUS_AVAILABLE
-
-          api_client.update_endpoint(endpoint.id, endpoint_update)
-        rescue SourcesApiClient::ApiError => e
-          logger.error("Source#availability_check - Failed to update Endpoint(ID: #{endpoint.id}) - #{e.message}")
-        end
-
-        def check_time
-          @check_time ||= Time.now.utc
         end
       end
     end

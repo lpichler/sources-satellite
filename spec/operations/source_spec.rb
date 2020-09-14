@@ -33,11 +33,14 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
       stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/endpoints")
         .with(:headers => headers)
         .to_return(:status => 200, :body => "", :headers => {})
+      stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/applications")
+        .with(:headers => headers)
+        .to_return(:status => 200, :body => "", :headers => {})
       stub_request(:patch, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}")
         .with(:body => {"availability_status" => availability_status, 'last_available_at' => checker.send(:check_time), 'last_checked_at' => checker.send(:check_time)}.to_json, :headers => headers)
         .to_return(:status => 200, :body => "", :headers => {})
 
-      checker.send(:update_source_and_endpoint, availability_status)
+      checker.send(:update_source_and_subresources, availability_status)
     end
   end
 
@@ -52,22 +55,15 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
 
       it "doesn't update the Source if params missing" do
         expect(subject).not_to receive(:connection_status)
-        expect(subject).not_to receive(:update_source_and_endpoint)
+        expect(subject).not_to receive(:update_source_and_subresources)
 
         subject.send(:availability_check)
       end
     end
 
-    it "doesn't update the Source's status if Source could be available" do
-      expect(subject).to receive(:connection_status).and_return(described_class::STATUS_AVAILABLE)
-      expect(subject).not_to receive(:update_source_and_endpoint)
-
-      subject.send(:availability_check)
-    end
-
     it "updates the Sources's status if Source is unavailable" do
       expect(subject).to receive(:connection_status).and_return(described_class::STATUS_UNAVAILABLE)
-      expect(subject).to receive(:update_source_and_endpoint)
+      expect(subject).to receive(:update_source_and_subresources)
 
       subject.send(:availability_check)
     end
@@ -78,7 +74,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
     before { allow(subject).to receive(:checked_recently?).and_return(false) }
 
     it "does nothing if 'eof' message received" do
-      expect(subject).not_to receive(:update_source_and_endpoint)
+      expect(subject).not_to receive(:update_source_and_subresources)
 
       subject.send(:availability_check_response, '1', 'eof', nil)
     end
@@ -90,7 +86,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
         'message' => 'Satellite online and ready'
       }
 
-      expect(subject).to receive(:update_source_and_endpoint).with(described_class::STATUS_AVAILABLE, response['message'])
+      expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_AVAILABLE, response['message'])
 
       subject.send(:availability_check_response, nil, 'response', response)
     end
@@ -102,7 +98,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
         'message'     => 'Satellite NOT READY'
       }
 
-      expect(subject).to receive(:update_source_and_endpoint).with(described_class::STATUS_UNAVAILABLE, response['message'])
+      expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, response['message'])
 
       subject.send(:availability_check_response, nil, 'response', response)
     end
@@ -114,7 +110,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
         'message'     => 'Satellite online but FIFI not ready'
       }
 
-      expect(subject).to receive(:update_source_and_endpoint).with(described_class::STATUS_UNAVAILABLE, response['message'])
+      expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, response['message'])
 
       subject.send(:availability_check_response, nil, 'response', response)
     end
@@ -123,9 +119,9 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
   describe "#availability_check_timeout" do
     subject { described_class.new }
     before { allow(subject).to receive(:checked_recently?).and_return(false) }
-    
+
     it "updates Source to 'unavailable'" do
-      expect(subject).to receive(:update_source_and_endpoint).with(described_class::STATUS_UNAVAILABLE, described_class::ERROR_MESSAGES[:receptor_not_responding])
+      expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, described_class::ERROR_MESSAGES[:receptor_not_responding])
       subject.send(:availability_check_timeout, '1')
     end
   end
