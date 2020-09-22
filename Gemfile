@@ -8,7 +8,7 @@ gem "cloudwatchlogger", "~> 0.2.1"
 gem "concurrent-ruby"
 gem "faraday", "~> 1.0"
 gem "manageiq-loggers", "~> 0.5.0"
-gem 'manageiq-messaging'
+gem "manageiq-messaging", "~> 1.0.0"
 gem "more_core_extensions"
 gem "optimist"
 gem "prometheus_exporter", "~> 0.4.5"
