@@ -9,6 +9,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
   end
   let(:headers) { {"Content-Type" => "application/json"}.merge(identity) }
   let(:connection) { double("TopologicalInventory::Satellite::Connection") }
+  let(:metrics) { double("Metrics", :record_operation => nil) }
 
   before do
     allow(TopologicalInventory::Satellite::Connection).to receive(:connection).and_return(connection)
@@ -69,7 +70,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
   describe "#availability_check" do
     let(:params) { {'source_id' => '1', 'source_uid' => '1234-5678', 'source_ref' => '9101112-13141516'} }
 
-    subject { described_class.new(params) }
+    subject { described_class.new(params, nil, metrics) }
     before { allow(subject).to receive(:checked_recently?).and_return(false) }
 
     context "with missing params" do
@@ -79,7 +80,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
         expect(subject).not_to receive(:connection_status)
         expect(subject).not_to receive(:update_source_and_subresources)
 
-        subject.send(:availability_check)
+        expect(subject.send(:availability_check)).to eq(subject.operation_status[:error])
       end
     end
 
@@ -87,16 +88,20 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
       expect(subject).to receive(:connection_status).and_return(described_class::STATUS_UNAVAILABLE)
       expect(subject).to receive(:update_source_and_subresources)
 
-      subject.send(:availability_check)
+      expect(subject.send(:availability_check)).to be_nil
     end
   end
 
   describe "#availability_check_response" do
-    subject { described_class.new }
-    before { allow(subject).to receive(:checked_recently?).and_return(false) }
+    subject { described_class.new({}, nil, metrics) }
+    before do
+      allow(subject).to receive(:checked_recently?).and_return(false)
+      subject.operation = "Source#availability_check"
+    end
 
     it "does nothing if 'eof' message received" do
       expect(subject).not_to receive(:update_source_and_subresources)
+      expect(metrics).not_to receive(:record_operation)
 
       subject.send(:availability_check_response, '1', 'eof', nil)
     end
@@ -109,6 +114,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
       }
 
       expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_AVAILABLE, response['message'])
+      expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:success])
 
       subject.send(:availability_check_response, nil, 'response', response)
     end
@@ -121,6 +127,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
       }
 
       expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, response['message'])
+      expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:success])
 
       subject.send(:availability_check_response, nil, 'response', response)
     end
@@ -133,17 +140,23 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
       }
 
       expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, response['message'])
+      expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:success])
 
       subject.send(:availability_check_response, nil, 'response', response)
     end
   end
 
   describe "#availability_check_timeout" do
-    subject { described_class.new }
-    before { allow(subject).to receive(:checked_recently?).and_return(false) }
+    subject { described_class.new({}, nil, metrics) }
+    before do
+      allow(subject).to receive(:checked_recently?).and_return(false)
+      subject.operation = "Source#availability_check"
+    end
 
     it "updates Source to 'unavailable'" do
       expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, described_class::ERROR_MESSAGES[:receptor_not_responding])
+      expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:error])
+
       subject.send(:availability_check_timeout, '1')
     end
   end
