@@ -6,9 +6,8 @@ RSpec.describe TopologicalInventory::Satellite::Receptor::Client do
   let(:identity) do
     { "x-rh-identity" => Base64.strict_encode64({ "identity" => { "account_number" => external_tenant, "user" => { "is_org_admin" => true }, "internal" => {"org_id" => organization_id} } }.to_json) }
   end
-  let(:headers) { {"Content-Type" => "application/json",
-                   "User-Agent" => "Faraday v1.0.1",
-                   "Accept" => "*/*",
+  let(:headers) { {"Content-Type"    => "application/json",
+                   "Accept"          => "*/*",
                    "Accept-Encoding" => 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3'}.merge(identity) }
   let(:receptor_scheme) {'http'}
   let(:receptor_host) {'localhost:9090'}
