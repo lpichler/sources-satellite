@@ -6,8 +6,8 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Worker do
     let(:receptor_client) { double("TopologicalInventory::Satellite::Receptor::Client") }
     let(:subject) { described_class.new }
     before do
-      require "manageiq-messaging"
-      allow(ManageIQ::Messaging::Client).to receive(:open).and_return(client)
+      TopologicalInventory::Satellite::MessagingClient.class_variable_set(:@@default, nil)
+      allow(subject).to receive(:client).and_return(client)
       allow(client).to receive(:close)
 
       allow(TopologicalInventory::Satellite::Receptor::Client).to receive(:new).and_return(receptor_client)
