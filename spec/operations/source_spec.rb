@@ -16,31 +16,53 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
   end
 
   describe "#update_source" do
-    it "makes a patch request to update the availability_status of a source" do
-      source_id = "201"
-      payload =
-        {
-          "params" => {
-            "source_id"       => source_id,
-            "external_tenant" => external_tenant,
-            "timestamp"       => Time.now.utc
+    let(:availability_status) { described_class::STATUS_AVAILABLE }
+    let(:source_id) { '201' }
+    let(:payload) { {"params" => {"source_id" => source_id, "external_tenant" => external_tenant, "timestamp" => Time.now.utc}} }
+
+    context "via sources_api" do
+      around do |example|
+        ENV['UPDATE_SOURCES_VIA_API'] = 'true'
+        example.run
+        ENV['UPDATE_SOURCES_VIA_API'] = nil
+      end
+
+      it "makes a patch request to update the availability_status of a source" do
+        checker = described_class.new(payload["params"])
+
+        stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/endpoints")
+          .with(:headers => headers)
+          .to_return(:status => 200, :body => "", :headers => {})
+        stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/applications")
+          .with(:headers => headers)
+          .to_return(:status => 200, :body => "", :headers => {})
+        stub_request(:patch, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}")
+          .with(:body => {"availability_status" => availability_status, 'last_available_at' => checker.send(:check_time), 'last_checked_at' => checker.send(:check_time)}.to_json, :headers => headers)
+          .to_return(:status => 200, :body => "", :headers => {})
+
+        checker.send(:update_source_and_subresources, availability_status)
+      end
+    end
+
+    context "via kafka" do
+      it "makes a patch request to update the availability_status of a source" do
+        expect(TopologicalInventory::Providers::Common::MessagingClient.default.client).to receive(:publish_message).with(
+          {
+            :message => "availability_status",
+            :payload => "{\"resource_type\":\"Source\",\"resource_id\":\"201\",\"status\":\"available\"}",
+            :service => "platform.sources.status"
           }
-        }
-      availability_status = described_class::STATUS_AVAILABLE
+        )
 
-      checker = described_class.new(payload["params"])
+        stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/endpoints")
+          .with(:headers => headers)
+          .to_return(:status => 200, :body => "", :headers => {})
+        stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/applications")
+          .with(:headers => headers)
+          .to_return(:status => 200, :body => "", :headers => {})
 
-      stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/endpoints")
-        .with(:headers => headers)
-        .to_return(:status => 200, :body => "", :headers => {})
-      stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/applications")
-        .with(:headers => headers)
-        .to_return(:status => 200, :body => "", :headers => {})
-      stub_request(:patch, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}")
-        .with(:body => {"availability_status" => availability_status, 'last_available_at' => checker.send(:check_time), 'last_checked_at' => checker.send(:check_time)}.to_json, :headers => headers)
-        .to_return(:status => 200, :body => "", :headers => {})
-
-      checker.send(:update_source_and_subresources, availability_status)
+        described_class.new(payload["params"]).send(:update_source_and_subresources, availability_status)
+      end
     end
   end
 
