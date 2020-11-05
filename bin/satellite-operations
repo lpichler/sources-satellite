@@ -42,5 +42,15 @@ TopologicalInventory::Satellite::Receptor::Client.configure do |config|
   config.queue_port        = args[:queue_port]
 end
 
-operations_worker = TopologicalInventory::Satellite::Operations::Worker.new(:host => args[:queue_host], :port => args[:queue_port])
-operations_worker.run
+TopologicalInventory::Satellite::MessagingClient.configure do |config|
+  config.queue_host = args[:queue_host]
+  config.queue_port = args[:queue_port]
+end
+
+begin
+  operations_worker = TopologicalInventory::Satellite::Operations::Worker.new(:metrics => metrics)
+  operations_worker.run
+rescue => err
+  puts err
+  raise
+end
