@@ -47,9 +47,9 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
 
     context "via kafka" do
       it "makes a patch request to update the availability_status of a source" do
-        expect(TopologicalInventory::Providers::Common::MessagingClient.default.client).to receive(:publish_message).with(
+        expect(TopologicalInventory::Providers::Common::MessagingClient.default.client).to receive(:publish_topic).with(
           {
-            :message => "availability_status",
+            :event   => "availability_status",
             :payload => "{\"resource_type\":\"Source\",\"resource_id\":\"201\",\"status\":\"available\"}",
             :service => "platform.sources.status"
           }
