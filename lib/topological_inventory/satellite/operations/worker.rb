@@ -50,7 +50,6 @@ module TopologicalInventory
           logger.error("#{e}\n#{e.backtrace.join("\n")}")
           metrics&.record_operation(message.message, :status => operation_status[:error])
         ensure
-          message.ack
           TopologicalInventory::Providers::Common::Operations::HealthCheck.touch_file
         end
       end

@@ -13,7 +13,7 @@ module TopologicalInventory
 
       def worker_listener_queue_opts
         {
-          :auto_ack    => false,
+          :auto_ack    => true,
           :max_bytes   => 50_000,
           :service     => OPERATIONS_QUEUE_NAME,
           :persist_ref => "topological-inventory-operations-satellite"
