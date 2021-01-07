@@ -45,7 +45,7 @@ module TopologicalInventory
       def identity_header(account = account_number)
         @identity ||= {
           "x-rh-identity" => Base64.strict_encode64(
-            {"identity" => {"account_number" => account, "user" => {"is_org_admin" => true }, "internal" => {"org_id" => '000001'}}}.to_json
+            {"identity" => {"account_number" => account, "user" => {"is_org_admin" => true}, "internal" => {"org_id" => '000001'}}}.to_json
           )
         }
       end
