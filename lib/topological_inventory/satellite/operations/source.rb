@@ -18,9 +18,9 @@ module TopologicalInventory
 
         attr_accessor :source_id, :source_uid, :source_ref
 
-        def initialize(params = {}, request_context = nil, metrics = nil, receptor_client = nil)
+        def initialize(params = {}, request_context = nil, metrics = nil)
           super(params, request_context, metrics)
-          self.connection      = TopologicalInventory::Satellite::Connection.connection(params["external_tenant"], receptor_client)
+          self.connection      = TopologicalInventory::Satellite::Connection.connection(params["external_tenant"])
           self.source_uid      = params['source_uid']
           self.source_ref      = params['source_ref']
         end
@@ -38,11 +38,8 @@ module TopologicalInventory
         # Health check returns maximally one message of type "response"
         #
         # @param _msg_id [String] UUID of request's id
-        # @param message_type [String] "response" | "eof"
         # @param response [Hash]
-        def availability_check_response(_msg_id, message_type, response)
-          return if message_type == 'eof' # noop
-
+        def availability_check_response(_msg_id, response)
           connected = response['result'] == 'ok' && response['fifi_status']
           status = connected ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
 
@@ -51,9 +48,15 @@ module TopologicalInventory
           metrics&.record_operation(operation.sub('#', '.'), :status => operation_status[:success])
         end
 
+        def availability_check_error(_msg_id, code, response)
+          logger.error("Source#availability_check - Receptor response error: Source ID: #{source_id} | Code: #{code} | Response: #{response}")
+          update_source_and_subresources(STATUS_UNAVAILABLE, response)
+          metrics&.record_operation(operation.sub('#', '.'), :status => operation_status[:error])
+        end
+
         # Timeout callback from receptor client
         #
-        # Kafka message wan't delivered for unknown reason
+        # Kafka message wasn't delivered for unknown reason
         #
         # @param msg_id [String] UUID of request's id
         def availability_check_timeout(msg_id)
