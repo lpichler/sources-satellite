@@ -51,7 +51,8 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
           {
             :event   => "availability_status",
             :payload => "{\"resource_type\":\"Source\",\"resource_id\":\"201\",\"status\":\"available\"}",
-            :service => "platform.sources.status"
+            :service => "platform.sources.status",
+            :headers => {"x-rh-identity" => "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjExMDAxIiwidXNlciI6eyJpc19vcmdfYWRtaW4iOnRydWV9fX0="}
           }
         )
 
