@@ -5,9 +5,8 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Processor do
   let(:operation_name) { 'Testing.operation' }
   let(:params) { {'source_id' => 1, 'external_tenant' => '12345'} }
   let(:payload) { {"params" => params, "request_context" => double('request_context')} }
-  let(:receptor_client) { double("TopologicalInventory::Satellite::Receptor::Client") }
 
-  subject { described_class.new(message, nil, receptor_client) }
+  subject { described_class.new(message, nil) }
 
   describe "#process" do
     context "Source.availability_check task" do

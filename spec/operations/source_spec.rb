@@ -89,76 +89,82 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
       expect(subject).to receive(:connection_status).and_return(described_class::STATUS_UNAVAILABLE)
       expect(subject).to receive(:update_source_and_subresources)
 
+      expect(subject.send(:availability_check)).to eq(subject.operation_status[:success])
+    end
+
+    it "doesn't update the Source if status is available (waits for async)" do
+      expect(subject).to receive(:connection_status).and_return(described_class::STATUS_AVAILABLE)
+      expect(subject).not_to receive(:update_source_and_subresources)
+
       expect(subject.send(:availability_check)).to be_nil
     end
   end
 
-  describe "#availability_check_response" do
+  context "receptor callbacks" do
     subject { described_class.new({}, nil, metrics) }
     before do
       allow(subject).to receive(:checked_recently?).and_return(false)
       subject.operation = "Source#availability_check"
     end
 
-    it "does nothing if 'eof' message received" do
-      expect(subject).not_to receive(:update_source_and_subresources)
-      expect(metrics).not_to receive(:record_operation)
+    describe "#availability_check_response" do
+      it "updates Source to 'available' if response successes" do
+        response = {
+          'result'      => 'ok',
+          'fifi_status' => true,
+          'message'     => 'Satellite online and ready'
+        }
 
-      subject.send(:availability_check_response, '1', 'eof', nil)
+        expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_AVAILABLE, response['message'])
+        expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:success])
+
+        subject.send(:availability_check_response, nil, response)
+      end
+
+      it "updates Source to 'unavailable' if response not ok" do
+        response = {
+          'result'      => 'error',
+          'fifi_status' => true,
+          'message'     => 'Satellite NOT READY'
+        }
+
+        expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, response['message'])
+        expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:success])
+
+        subject.send(:availability_check_response, nil, response)
+      end
+
+      it "updates Source to 'unavailable' if Satellite not ready for FIFI" do
+        response = {
+          'result'      => 'ok',
+          'fifi_status' => false,
+          'message'     => 'Satellite online but FIFI not ready'
+        }
+
+        expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, response['message'])
+        expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:success])
+
+        subject.send(:availability_check_response, nil, response)
+      end
     end
 
-    it "updates Source to 'available' if response successes" do
-      response = {
-        'result'      => 'ok',
-        'fifi_status' => true,
-        'message' => 'Satellite online and ready'
-      }
+    describe "#availability_check_error" do
+      it "updates Source to 'unavailable'" do
+        response = 'Sample receptor error message'
+        expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, response)
+        expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:error])
 
-      expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_AVAILABLE, response['message'])
-      expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:success])
-
-      subject.send(:availability_check_response, nil, 'response', response)
+        subject.send(:availability_check_error, '1', '1', response)
+      end
     end
 
-    it "updates Source to 'unavailable' if response not ok" do
-      response = {
-        'result'      => 'error',
-        'fifi_status' => true,
-        'message'     => 'Satellite NOT READY'
-      }
+    describe "#availability_check_timeout" do
+      it "updates Source to 'unavailable'" do
+        expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, described_class::ERROR_MESSAGES[:receptor_not_responding])
+        expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:error])
 
-      expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, response['message'])
-      expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:success])
-
-      subject.send(:availability_check_response, nil, 'response', response)
-    end
-
-    it "updates Source to 'unavailable' if Satellite not ready for FIFI" do
-      response = {
-        'result'      => 'ok',
-        'fifi_status' => false,
-        'message'     => 'Satellite online but FIFI not ready'
-      }
-
-      expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, response['message'])
-      expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:success])
-
-      subject.send(:availability_check_response, nil, 'response', response)
-    end
-  end
-
-  describe "#availability_check_timeout" do
-    subject { described_class.new({}, nil, metrics) }
-    before do
-      allow(subject).to receive(:checked_recently?).and_return(false)
-      subject.operation = "Source#availability_check"
-    end
-
-    it "updates Source to 'unavailable'" do
-      expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, described_class::ERROR_MESSAGES[:receptor_not_responding])
-      expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:error])
-
-      subject.send(:availability_check_timeout, '1')
+        subject.send(:availability_check_timeout, '1')
+      end
     end
   end
 end
