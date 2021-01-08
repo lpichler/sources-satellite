@@ -69,6 +69,8 @@ module TopologicalInventory
         directive.on_success { |msg_id, response| receiver.availability_check_response(msg_id, response) }
                  .on_error { |msg_id, code, response| receiver.availability_check_error(msg_id, code, response) }
                  .on_timeout { |msg_id| receiver.availability_check_timeout(msg_id) }
+
+        directive.call
       end
 
       private

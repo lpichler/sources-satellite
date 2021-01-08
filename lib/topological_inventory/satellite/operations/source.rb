@@ -26,11 +26,22 @@ module TopologicalInventory
         end
 
         def availability_check
-          result = super
-          # Doesn't update metrics when waiting for async response
-          return nil if result == operation_status[:success]
+          self.operation += '#availability_check'
 
-          result
+          return operation_status[:error] if params_missing?
+
+          return operation_status[:skipped] if checked_recently?
+
+          status, error_message = connection_status
+
+          if status == STATUS_UNAVAILABLE
+            update_source_and_subresources(status, error_message)
+            logger.availability_check("Completed: Source #{source_id} is #{status}")
+            operation_status[:success]
+          else
+            # Doesn't update metrics when waiting for async response
+            nil
+          end
         end
 
         # Response callback from receptor client
@@ -43,13 +54,13 @@ module TopologicalInventory
           connected = response['result'] == 'ok' && response['fifi_status']
           status = connected ? STATUS_AVAILABLE : STATUS_UNAVAILABLE
 
-          logger.info("Source#availability_check for source #{source_id} completed. Status: #{status}, Result: #{response['result']}, FIFI status: #{response['fifi_status'] ? 'T' : 'F'}, Reason: #{response['message']}")
+          logger.availability_check("Completed: Source ID: #{source_id}, Status: #{status}, Result: #{response['result']}, FIFI status: #{response['fifi_status'] ? 'T' : 'F'}, Reason: #{response['message']}")
           update_source_and_subresources(status, response['message'])
           metrics&.record_operation(operation.sub('#', '.'), :status => operation_status[:success])
         end
 
         def availability_check_error(_msg_id, code, response)
-          logger.error("Source#availability_check - Receptor response error: Source ID: #{source_id} | Code: #{code} | Response: #{response}")
+          logger.availability_check("Receptor response error: Source ID: #{source_id} | Code: #{code} | Response: #{response}", :error)
           update_source_and_subresources(STATUS_UNAVAILABLE, response)
           metrics&.record_operation(operation.sub('#', '.'), :status => operation_status[:error])
         end
@@ -60,7 +71,7 @@ module TopologicalInventory
         #
         # @param msg_id [String] UUID of request's id
         def availability_check_timeout(msg_id)
-          logger.error("Source#availability_check - Receptor doesn't respond for Source (ID #{source_id}) | (message id: #{msg_id})")
+          logger.availability_check("Receptor doesn't respond for Source (ID #{source_id}) | (message id: #{msg_id})", :error)
           update_source_and_subresources(STATUS_UNAVAILABLE, ERROR_MESSAGES[:receptor_not_responding])
           metrics&.record_operation(operation.sub('#', '.'), :status => operation_status[:error])
         end
