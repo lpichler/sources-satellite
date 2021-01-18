@@ -37,11 +37,10 @@ module TopologicalInventory
           if status == STATUS_UNAVAILABLE
             update_source_and_subresources(status, error_message)
             logger.availability_check("Completed: Source #{source_id} is #{status}")
-            operation_status[:success]
-          else
-            # Doesn't update metrics when waiting for async response
-            nil
           end
+
+          # Doesn't double-update metrics
+          nil
         end
 
         # Response callback from receptor client
