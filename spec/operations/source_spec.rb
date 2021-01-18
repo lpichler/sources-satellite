@@ -89,7 +89,7 @@ RSpec.describe TopologicalInventory::Satellite::Operations::Source do
       expect(subject).to receive(:connection_status).and_return(described_class::STATUS_UNAVAILABLE)
       expect(subject).to receive(:update_source_and_subresources)
 
-      expect(subject.send(:availability_check)).to eq(subject.operation_status[:success])
+      expect(subject.send(:availability_check)).to be_nil
     end
 
     it "doesn't update the Source if status is available (waits for async)" do
