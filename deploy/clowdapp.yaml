@@ -7,6 +7,9 @@ objects:
   kind: ClowdApp
   metadata:
     name: topo-satellite
+    labels:
+      app: topological-inventory
+      clowdapp: topo-satellite
   spec:
     envName: ${ENV_NAME}
     deployments:
