@@ -1,7 +1,7 @@
-require "topological_inventory/satellite/logging"
+require "sources/satellite/logging"
 require "receptor_controller-client"
 
-module TopologicalInventory
+module Sources
   module Satellite
     class Connection
       class << self
@@ -19,7 +19,7 @@ module TopologicalInventory
           @sync.synchronize do
             return @receptor_client if @receptor_client.present?
 
-            @receptor_client = ReceptorController::Client.new(:logger => TopologicalInventory::Satellite.logger)
+            @receptor_client = ReceptorController::Client.new(:logger => Sources::Satellite.logger)
             @receptor_client.start
           end
           @receptor_client

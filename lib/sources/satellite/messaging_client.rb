@@ -2,7 +2,7 @@ require "manageiq-messaging"
 require "topological_inventory/providers/common/messaging_client"
 require "topological_inventory/providers/common/clowder_config"
 
-module TopologicalInventory
+module Sources
   module Satellite
     class MessagingClient < TopologicalInventory::Providers::Common::MessagingClient
       OPERATIONS_QUEUE_NAME = "platform.topological-inventory.operations-satellite".freeze

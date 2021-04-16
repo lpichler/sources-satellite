@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: topological-inventory-satellite
+  name: sources-satellite
 objects:
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
-    name: topo-satellite
+    name: sources-satellite
   spec:
     envName: ${ENV_NAME}
     deployments:
@@ -78,7 +78,7 @@ parameters:
   required: true
 - description: Image
   name: IMAGE
-  value: quay.io/cloudservices/topological-inventory-satellite
+  value: quay.io/cloudservices/sources-satellite
 - description: Image tag
   name: IMAGE_TAG
   required: true

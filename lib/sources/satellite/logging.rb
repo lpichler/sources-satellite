@@ -1,6 +1,6 @@
 require "topological_inventory/providers/common/logging"
 
-module TopologicalInventory
+module Sources
   module Satellite
     class << self
       attr_writer :logger
@@ -12,7 +12,7 @@ module TopologicalInventory
 
     module Logging
       def logger
-        TopologicalInventory::Satellite.logger
+        Sources::Satellite.logger
       end
     end
   end

@@ -1,8 +1,8 @@
-require "topological_inventory/satellite/connection"
-require "topological_inventory/satellite/logging"
+require "sources/satellite/connection"
+require "sources/satellite/logging"
 require "topological_inventory/providers/common/operations/source"
 
-module TopologicalInventory
+module Sources
   module Satellite
     module Operations
       class Source < TopologicalInventory::Providers::Common::Operations::Source
@@ -20,7 +20,7 @@ module TopologicalInventory
 
         def initialize(params = {}, request_context = nil, metrics = nil)
           super(params, request_context, metrics)
-          self.connection      = TopologicalInventory::Satellite::Connection.connection(params["external_tenant"])
+          self.connection      = Sources::Satellite::Connection.connection(params["external_tenant"])
           self.source_uid      = params['source_uid']
           self.source_ref      = params['source_ref']
         end

@@ -3,12 +3,12 @@
 # --------------------------------------------
 # Options that must be configured by app owner
 # --------------------------------------------
-APP_NAME="topological-inventory"  # name of app-sre "application" folder this component lives in
-COMPONENT_NAME="topo-satellite"  # name of app-sre "resourceTemplate" in deploy.yaml for this component
-IMAGE="quay.io/cloudservices/topological-inventory-satellite"
+APP_NAME="sources"  # name of app-sre "application" folder this component lives in
+COMPONENT_NAME="sources-satellite"  # name of app-sre "resourceTemplate" in deploy.yaml for this component
+IMAGE="quay.io/cloudservices/sources-satellite"
 
-IQE_PLUGINS="topology_inventory"
-IQE_MARKER_EXPRESSION="topology_smoke"
+IQE_PLUGINS="sources"
+IQE_MARKER_EXPRESSION="sources_smoke"
 IQE_FILTER_EXPRESSION=""
 
 # We are checking PRs with Travis

@@ -1,6 +1,6 @@
 require 'topological_inventory/providers/common/metrics'
 
-module TopologicalInventory
+module Sources
   module Satellite
     module Operations
       class Metrics < TopologicalInventory::Providers::Common::Metrics
@@ -12,7 +12,7 @@ module TopologicalInventory
         end
 
         def default_prefix
-          "topological_inventory_satellite_operations_"
+          "sources_satellite_operations_"
         end
       end
     end

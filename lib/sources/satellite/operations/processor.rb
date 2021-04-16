@@ -1,8 +1,8 @@
-require "topological_inventory/satellite/logging"
-require "topological_inventory/satellite/operations/source"
+require "sources/satellite/logging"
+require "sources/satellite/operations/source"
 require "topological_inventory/providers/common/operations/processor"
 
-module TopologicalInventory
+module Sources
   module Satellite
     module Operations
       class Processor < TopologicalInventory::Providers::Common::Operations::Processor

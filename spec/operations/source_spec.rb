@@ -1,18 +1,18 @@
 require "sources-api-client"
-require "topological_inventory/satellite/operations/source"
+require "sources/satellite/operations/source"
 
-RSpec.describe TopologicalInventory::Satellite::Operations::Source do
+RSpec.describe Sources::Satellite::Operations::Source do
   let(:host_url) { "https://cloud.redhat.com" }
   let(:external_tenant) { "11001" }
   let(:identity) do
     { "x-rh-identity" => Base64.strict_encode64({ "identity" => { "account_number" => external_tenant, "user" => { "is_org_admin" => true } } }.to_json) }
   end
   let(:headers) { {"Content-Type" => "application/json"}.merge(identity) }
-  let(:connection) { double("TopologicalInventory::Satellite::Connection") }
+  let(:connection) { double("Sources::Satellite::Connection") }
   let(:metrics) { double("Metrics", :record_operation => nil) }
 
   before do
-    allow(TopologicalInventory::Satellite::Connection).to receive(:connection).and_return(connection)
+    allow(Sources::Satellite::Connection).to receive(:connection).and_return(connection)
     allow(connection).to receive(:identity_header).and_return(identity)
   end
 

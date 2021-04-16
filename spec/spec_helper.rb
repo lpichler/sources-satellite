@@ -7,7 +7,7 @@ end
 
 require "rspec"
 require "webmock/rspec"
-require "topological_inventory-satellite"
+require "sources-satellite"
 
 RSpec.configure do |config|
   # Disable RSpec exposing methods globally on `Module` and `main`

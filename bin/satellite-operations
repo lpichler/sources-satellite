@@ -4,8 +4,8 @@ $LOAD_PATH << File.expand_path("../lib", __dir__)
 require "bundler/setup"
 require "active_support/core_ext/object/blank"
 require "optimist"
-require "topological_inventory/satellite/operations/worker"
-require "topological_inventory/satellite/operations/metrics"
+require "sources/satellite/operations/worker"
+require "sources/satellite/operations/metrics"
 require "topological_inventory/providers/common/clowder_config"
 
 def parse_args
@@ -52,13 +52,13 @@ ReceptorController::Client.configure do |config|
   config.pre_shared_key    = args[:receptor_controller_psk] if args[:receptor_controller_psk].present?
 end
 
-TopologicalInventory::Satellite::MessagingClient.configure do |config|
+Sources::Satellite::MessagingClient.configure do |config|
   config.queue_host = args[:queue_host]
   config.queue_port = args[:queue_port]
 end
 
-metrics = TopologicalInventory::Satellite::Operations::Metrics.new(args[:metrics_port])
-operations_worker = TopologicalInventory::Satellite::Operations::Worker.new(metrics)
+metrics = Sources::Satellite::Operations::Metrics.new(args[:metrics_port])
+operations_worker = Sources::Satellite::Operations::Worker.new(metrics)
 Signal.trap("TERM") do
   metrics.stop_server
   exit

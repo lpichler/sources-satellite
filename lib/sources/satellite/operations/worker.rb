@@ -1,11 +1,11 @@
-require "topological_inventory/satellite/logging"
-require "topological_inventory/satellite/connection"
-require "topological_inventory/satellite/messaging_client"
-require "topological_inventory/satellite/operations/processor"
+require "sources/satellite/logging"
+require "sources/satellite/connection"
+require "sources/satellite/messaging_client"
+require "sources/satellite/operations/processor"
 require "topological_inventory/providers/common/mixins/statuses"
-require "topological_inventory/providers/common/operations/health_check"
+require "sources/providers/common/operations/health_check"
 
-module TopologicalInventory
+module Sources
   module Satellite
     module Operations
       class Worker
@@ -19,7 +19,7 @@ module TopologicalInventory
         def run
           start_workers
 
-          logger.info("Topological Inventory Satellite Operations worker started...")
+          logger.info("Sources Satellite Operations worker started...")
 
           client.subscribe_topic(queue_opts) do |message|
             process_message(message)
@@ -36,11 +36,11 @@ module TopologicalInventory
         attr_accessor :metrics
 
         def client
-          @client ||= TopologicalInventory::Satellite::MessagingClient.default.worker_listener
+          @client ||= Sources::Satellite::MessagingClient.default.worker_listener
         end
 
         def queue_opts
-          TopologicalInventory::Satellite::MessagingClient.default.worker_listener_queue_opts
+          Sources::Satellite::MessagingClient.default.worker_listener_queue_opts
         end
 
         def process_message(message)
@@ -54,11 +54,11 @@ module TopologicalInventory
         end
 
         def start_workers
-          TopologicalInventory::Satellite::Connection.start_receptor_client
+          Sources::Satellite::Connection.start_receptor_client
         end
 
         def stop_workers
-          TopologicalInventory::Satellite::Connection.stop_receptor_client
+          Sources::Satellite::Connection.stop_receptor_client
         end
       end
     end
