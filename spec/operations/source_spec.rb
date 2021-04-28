@@ -161,7 +161,7 @@ RSpec.describe Sources::Satellite::Operations::Source do
     describe "#availability_check_timeout" do
       it "updates Source to 'unavailable'" do
         expect(subject).to receive(:update_source_and_subresources).with(described_class::STATUS_UNAVAILABLE, described_class::ERROR_MESSAGES[:receptor_not_responding])
-        expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => subject.operation_status[:error])
+        expect(metrics).to receive(:record_operation).with('Source.availability_check', :status => 'timeout')
 
         subject.send(:availability_check_timeout, '1')
       end

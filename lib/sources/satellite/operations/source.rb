@@ -70,9 +70,9 @@ module Sources
         #
         # @param msg_id [String] UUID of request's id
         def availability_check_timeout(msg_id)
-          logger.availability_check("Receptor doesn't respond for Source (ID #{source_id}) | (message id: #{msg_id})", :error)
+          logger.availability_check("Receptor doesn't respond for Source (ID #{source_id}) | (message id: #{msg_id})", :warn)
           update_source_and_subresources(STATUS_UNAVAILABLE, ERROR_MESSAGES[:receptor_not_responding])
-          metrics&.record_operation(operation.sub('#', '.'), :status => operation_status[:error])
+          metrics&.record_operation(operation.sub('#', '.'), :status => 'timeout')
         end
 
         private
