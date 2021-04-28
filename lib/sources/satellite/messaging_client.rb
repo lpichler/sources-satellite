@@ -17,7 +17,7 @@ module Sources
           :auto_ack    => true,
           :max_bytes   => 50_000,
           :service     => TopologicalInventory::Providers::Common::ClowderConfig.kafka_topic(OPERATIONS_QUEUE_NAME),
-          :persist_ref => "topological-inventory-operations-satellite"
+          :persist_ref => "sources-operations-satellite"
         }
       end
 
