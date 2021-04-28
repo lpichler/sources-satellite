@@ -3,7 +3,7 @@ require "sources/satellite/connection"
 require "sources/satellite/messaging_client"
 require "sources/satellite/operations/processor"
 require "topological_inventory/providers/common/mixins/statuses"
-require "sources/providers/common/operations/health_check"
+require "topological_inventory/providers/common/operations/health_check"
 
 module Sources
   module Satellite

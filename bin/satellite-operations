@@ -25,13 +25,15 @@ def parse_args
 end
 
 def check_args(args)
-  (args.keys - %i[help receptor_controller_psk]).each do |arg|
+  (args.keys - %i[help metrics_port receptor_controller_psk]).each do |arg|
     Optimist.die arg, "can't be blank" if args[arg].blank?
     Optimist.die arg, "can't be zero" if arg.to_s.index('port').present? && args[arg].zero?
   end
 end
 
 args = parse_args
+
+# Updates kafka/metrics args etc. if provided by the Clowder
 if TopologicalInventory::Providers::Common::ClowderConfig.clowder_enabled?
   TopologicalInventory::Providers::Common::ClowderConfig.fill_args_operations(args)
 end
