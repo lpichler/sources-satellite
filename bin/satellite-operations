@@ -51,6 +51,7 @@ ReceptorController::Client.configure do |config|
   config.queue_host        = args[:queue_host]
   config.queue_port        = args[:queue_port]
   config.queue_topic       = TopologicalInventory::Providers::Common::ClowderConfig.kafka_topic(config.queue_topic)
+  config.client_id_header  = 'sources'
   config.pre_shared_key    = args[:receptor_controller_psk] if args[:receptor_controller_psk].present?
 end
 
