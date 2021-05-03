@@ -5,10 +5,10 @@ require File.join(Bundler::Plugin.index.load_paths("bundler-inject")[0], "bundle
 
 gem "activesupport", '~> 5.2.5'
 gem "clowder-common-ruby" # version specified in providers-common
-gem "cloudwatchlogger", "~> 0.2.1"
+
 gem "concurrent-ruby"
 gem "faraday", "~> 1.0"
-gem "manageiq-loggers", "~> 0.6.0"
+gem "insights-loggers-ruby", "~> 0.1.9"
 gem "manageiq-messaging", "~> 1.0.0"
 gem "more_core_extensions"
 gem "optimist"
