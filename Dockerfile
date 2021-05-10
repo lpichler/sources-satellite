@@ -25,6 +25,10 @@ RUN echo "gem: --no-document" > ~/.gemrc && \
 COPY . $WORKDIR
 
 RUN chgrp -R 0 $WORKDIR && \
-    chmod -R g=u $WORKDIR
+    chmod -R g=u $WORKDIR && \
+    curl -L -o /usr/bin/haberdasher \
+    https://github.com/RedHatInsights/haberdasher/releases/latest/download/haberdasher_linux_amd64 && \
+    chmod 755 /usr/bin/haberdasher
 
-ENTRYPOINT ["bin/satellite-operations"]
+ENTRYPOINT ["/usr/bin/haberdasher"]
+CMD ["bin/satellite-operations"]
