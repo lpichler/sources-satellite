@@ -20,6 +20,8 @@ module Sources
           start_workers
 
           logger.info("Sources Satellite Operations worker started...")
+          logger.warn("Sources Satellite Operations worker started...")
+          logger.error("Sources Satellite Operations worker started...")
 
           client.subscribe_topic(queue_opts) do |message|
             process_message(message)
