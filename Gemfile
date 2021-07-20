@@ -8,7 +8,7 @@ gem "clowder-common-ruby" # version specified in providers-common
 
 gem "concurrent-ruby"
 gem "faraday", "~> 1.0"
-gem "insights-loggers-ruby", "~> 0.1.9"
+gem "insights-loggers-ruby", "~> 0.1.10"
 gem "manageiq-messaging", "~> 1.0.0"
 gem "more_core_extensions"
 gem "optimist"
