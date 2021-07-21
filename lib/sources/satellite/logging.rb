@@ -12,17 +12,12 @@ module Sources
       if ENV['LOG_HANDLER'] == "haberdasher"
         "Insights::Loggers::StdErrorLogger"
       else
-        "TopologicalInventory::Providers::Common::Logger"
+        "Insights::Loggers::CloudWatch"
       end
     end
 
     def self.logger
-      log_params = {:app_name => APP_NAME}
-
-      if logger_class == "Insights::Loggers::StdErrorLogger"
-        log_params[:extend_module] = "TopologicalInventory::Providers::Common::LoggingFunctions"
-      end
-
+      log_params = {:app_name => APP_NAME, :extend_module => "TopologicalInventory::Providers::Common::LoggingFunctions"}
       @logger ||= Insights::Loggers::Factory.create_logger(logger_class, log_params)
     end
 
