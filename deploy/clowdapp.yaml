@@ -24,6 +24,8 @@ objects:
         env:
         - name: LOG_LEVEL
           value: ${LOG_LEVEL}
+        - name: CONTAINER_LOG_LEVEL
+          value: ${CONTAINER_LOG_LEVEL}
         - name: SOURCES_HOST
           value: ${SOURCES_HOST}
         - name: SOURCES_PORT
@@ -84,6 +86,8 @@ parameters:
   required: true
 - name: LOG_LEVEL
   value: WARN
+- name: CONTAINER_LOG_LEVEL
+  value: INFO
 - name: MEMORY_LIMIT
   value: 200Mi
 - name: MEMORY_REQUEST
