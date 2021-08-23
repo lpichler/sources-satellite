@@ -4,7 +4,7 @@ plugin 'bundler-inject', '~> 1.1'
 require File.join(Bundler::Plugin.index.load_paths("bundler-inject")[0], "bundler-inject") rescue nil
 
 gem "activesupport", '~> 5.2.5'
-gem "clowder-common-ruby" # version specified in providers-common
+gem "clowder-common-ruby", '~> 0.2.3'
 
 gem "concurrent-ruby"
 gem "faraday", "~> 1.0"
