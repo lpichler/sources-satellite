@@ -43,6 +43,35 @@ RSpec.describe Sources::Satellite::Operations::Source do
 
         checker.send(:update_source_and_subresources, availability_status)
       end
+
+      context "with PSK" do
+        let(:psk) { '1234' }
+
+        around do |example|
+          ENV['SOURCES_PSK'] = psk
+          example.run
+          ENV['SOURCES_PSK'] = nil
+        end
+
+        it "makes a patch request to update the availability_status of a source" do
+          checker = described_class.new(payload["params"])
+          header_with_psk = headers.merge("x-rh-sources-account-number" => external_tenant, "x-rh-sources-psk" => psk)
+          header_with_psk = header_with_psk.except('x-rh-identity')
+
+          stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/endpoints")
+            .with(:headers => header_with_psk)
+            .to_return(:status => 200, :body => "", :headers => {})
+          stub_request(:get, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}/applications")
+            .with(:headers => header_with_psk)
+            .to_return(:status => 200, :body => "", :headers => {})
+
+          stub_request(:patch, "https://cloud.redhat.com/api/sources/v3.0/sources/#{source_id}")
+            .with(:body => {"availability_status" => availability_status, 'last_available_at' => checker.send(:check_time), 'last_checked_at' => checker.send(:check_time)}.to_json, :headers => header_with_psk)
+            .to_return(:status => 200, :body => "", :headers => {})
+
+          checker.send(:update_source_and_subresources, availability_status)
+        end
+      end
     end
 
     context "via kafka" do
