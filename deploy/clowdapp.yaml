@@ -46,11 +46,11 @@ objects:
         - name: UPDATE_SOURCES_VIA_API
           value: ${UPDATE_SOURCES_VIA_API}
         - name: SOURCES_PSK
-            valueFrom:
-              secretKeyRef:
-                name: internal-psk
-                key: psk
-                optional: true
+          valueFrom:
+            secretKeyRef:
+              name: internal-psk
+              key: psk
+              optional: true
         livenessProbe:
           exec:
             command:
