@@ -18,7 +18,7 @@ gem "rdkafka", "~> 0.8.1"
 gem "receptor_controller-client", "~> 0.0.10"
 gem "rest-client", "~>2.0"
 gem "sources-api-client", "~> 3.0"
-gem "topological_inventory-providers-common", "~> 3.0.1"
+gem "topological_inventory-providers-common", "~> 3.0.2"
 
 group :development, :test do
   gem "rspec"
