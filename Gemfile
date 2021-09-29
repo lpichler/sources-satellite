@@ -8,7 +8,8 @@ gem "clowder-common-ruby", '~> 0.2.3'
 
 gem "concurrent-ruby"
 gem "faraday", "~> 1.0"
-gem "insights-loggers-ruby", "~> 0.1.10"
+gem "manageiq-loggers",      "~> 0.5.0"
+gem "insights-loggers-ruby", "~> 0.1.12"
 gem "manageiq-messaging", "~> 1.0.0"
 gem "more_core_extensions"
 gem "optimist"
