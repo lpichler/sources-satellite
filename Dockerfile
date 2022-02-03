@@ -16,6 +16,7 @@ ENV WORKDIR /opt/satellite-operations/
 WORKDIR $WORKDIR
 
 COPY Gemfile $WORKDIR
+COPY Gemfile.lock $WORKDIR
 RUN echo "gem: --no-document" > ~/.gemrc && \
     gem install bundler --conservative --without development:test && \
     bundle install --jobs 8 --retry 3 && \
