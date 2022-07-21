@@ -1,6 +1,6 @@
 require "sources/satellite/operations/worker"
 
-RSpec.describe Sources::Satellite::Operations::Worker do
+RSpec.xdescribe Sources::Satellite::Operations::Worker do
   describe "#run" do
     let(:client) { double("ManageIQ::Messaging::Client") }
     let(:message) { double("ManageIQ::Messaging::ReceivedMessage") }
