@@ -6,7 +6,7 @@ GIT
 
 GIT
   remote: https://github.com/RedHatInsights/receptor_controller-client-ruby
-  revision: 8d389b94e18f9b6421f7d97a8bd769f214e6bd16
+  revision: c05e681e6d529f931e3415d0383fbdaf8b2c76a3
   specs:
     receptor_controller-client (0.0.10)
       activesupport (~> 5.2, >= 5.2.4.3)
