@@ -6,7 +6,7 @@ GIT
 
 GIT
   remote: https://github.com/RedHatInsights/receptor_controller-client-ruby
-  revision: e54e5c7181d3b98cfa875f3c27a6917385f90d48
+  revision: 8d389b94e18f9b6421f7d97a8bd769f214e6bd16
   specs:
     receptor_controller-client (0.0.10)
       activesupport (~> 5.2, >= 5.2.4.3)
@@ -28,16 +28,16 @@ GEM
       public_suffix (>= 2.0.2, < 5.0)
     ast (2.4.2)
     aws-eventstream (1.2.0)
-    aws-partitions (1.606.0)
+    aws-partitions (1.613.0)
     aws-sdk-cloudwatchlogs (1.53.0)
       aws-sdk-core (~> 3, >= 3.127.0)
       aws-sigv4 (~> 1.1)
-    aws-sdk-core (3.131.2)
+    aws-sdk-core (3.131.5)
       aws-eventstream (~> 1, >= 1.0.2)
       aws-partitions (~> 1, >= 1.525.0)
       aws-sigv4 (~> 1.1)
       jmespath (~> 1, >= 1.6.1)
-    aws-sigv4 (1.5.0)
+    aws-sigv4 (1.5.1)
       aws-eventstream (~> 1, >= 1.0.2)
     cloudwatchlogger (0.2.1)
       aws-sdk-cloudwatchlogs (~> 1)
@@ -227,7 +227,7 @@ GEM
       topological_inventory-ingress_api-client (~> 1.0, >= 1.0.3)
     typhoeus (1.4.0)
       ethon (>= 0.9.0)
-    tzinfo (1.2.9)
+    tzinfo (1.2.10)
       thread_safe (~> 0.1)
     unf (0.1.4)
       unf_ext
