@@ -51,6 +51,12 @@ objects:
               name: internal-psk
               key: psk
               optional: true
+        readinessProbe:
+          exec:
+            command:
+            - stat
+            - /tmp/healthy
+          initialDelaySeconds: 5
         livenessProbe:
           exec:
             command:
