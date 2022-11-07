@@ -32,6 +32,10 @@ module Sources
           topic = kafka_topic(OPERATIONS_QUEUE_NAME)
 
           client.subscribe(topic)
+
+          # touch the healthcheck file since we were able to successfully subscribe to the topic
+          TopologicalInventory::Providers::Common::Operations::HealthCheck.touch_file
+
           client.each do |message|
             # calling the private method on the kafka common module :skull:
             self.send(:process_topic_message, client, topic, message) do |parsed|
