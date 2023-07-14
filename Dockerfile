@@ -25,4 +25,6 @@ RUN echo "gem: --no-document" > ~/.gemrc && \
 
 COPY . $WORKDIR
 
+RUN chmod 777 /usr/share/gems/cache/bundler/git
+
 ENTRYPOINT ["bin/satellite-operations"]
