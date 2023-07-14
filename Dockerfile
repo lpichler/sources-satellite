@@ -12,6 +12,8 @@ RUN dnf -y --disableplugin=subscription-manager module enable ruby:2.6 && \
       && \
     dnf --disableplugin=subscription-manager clean all
 
+USER 0
+
 ENV WORKDIR /opt/satellite-operations/
 WORKDIR $WORKDIR
 
@@ -24,7 +26,5 @@ RUN echo "gem: --no-document" > ~/.gemrc && \
     rm -rvf /root/.bundle/cache
 
 COPY . $WORKDIR
-
-RUN chmod 777 /usr/share/gems/cache/bundler/git
 
 ENTRYPOINT ["bin/satellite-operations"]
