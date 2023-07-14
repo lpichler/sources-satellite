@@ -3,19 +3,21 @@ source 'https://rubygems.org'
 plugin 'bundler-inject', '~> 1.1'
 require File.join(Bundler::Plugin.index.load_paths("bundler-inject")[0], "bundler-inject") rescue nil
 
+gem "bundler", "~> 2.0"
 gem "activesupport", '~> 5.2.5'
-gem "clowder-common-ruby", '~> 0.2.3'
+gem "clowder-common-ruby", :git => "https://github.com/RedHatInsights/clowder-common-ruby"
 
 gem "concurrent-ruby"
 gem "faraday", "~> 1.0"
-gem "insights-loggers-ruby", "~> 0.1.10"
+gem "manageiq-loggers",      "~> 0.5.0"
+gem "insights-loggers-ruby", "~> 0.1.12"
 gem "manageiq-messaging", "~> 1.0.0"
 gem "more_core_extensions"
 gem "optimist"
 gem "prometheus_exporter", "~> 0.4.5"
 gem "rake", ">= 12.3.3"
 gem "rdkafka", "~> 0.8.1"
-gem "receptor_controller-client", "~> 0.0.10"
+gem "receptor_controller-client", :git => "https://github.com/RedHatInsights/receptor_controller-client-ruby"
 gem "rest-client", "~>2.0"
 gem "sources-api-client", "~> 3.0"
 gem "topological_inventory-providers-common", "~> 3.0.2"

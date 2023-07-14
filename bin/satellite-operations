@@ -48,16 +48,8 @@ end
 ReceptorController::Client.configure do |config|
   config.controller_scheme = args[:receptor_controller_scheme]
   config.controller_host   = "#{args[:receptor_controller_host]}:#{args[:receptor_controller_port]}"
-  config.queue_host        = args[:queue_host]
-  config.queue_port        = args[:queue_port]
-  config.queue_topic       = TopologicalInventory::Providers::Common::ClowderConfig.kafka_topic(config.queue_topic)
-  config.client_id_header  = 'sources'
   config.pre_shared_key    = args[:receptor_controller_psk] if args[:receptor_controller_psk].present?
-end
-
-Sources::Satellite::MessagingClient.configure do |config|
-  config.queue_host = args[:queue_host]
-  config.queue_port = args[:queue_port]
+  config.client_id_header  = 'sources'
 end
 
 metrics = Sources::Satellite::Operations::Metrics.new(args[:metrics_port])

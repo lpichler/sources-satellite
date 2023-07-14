@@ -9,7 +9,6 @@
 /.creds
 /.byebug_history
 /coverage/
-/Gemfile.lock
 /InstalledFiles
 /pkg/
 /spec/reports/

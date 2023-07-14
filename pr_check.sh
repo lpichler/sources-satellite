@@ -11,6 +11,9 @@ IQE_PLUGINS="sources"
 IQE_MARKER_EXPRESSION="sources_smoke"
 IQE_FILTER_EXPRESSION=""
 
+# builder
+docker build . -t satellite-$(uuidgen)
+
 # We are checking PRs with Travis
 
 # Need to make a dummy results file to make tests pass
